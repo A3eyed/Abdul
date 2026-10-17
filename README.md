@@ -10,8 +10,7 @@ The repository *is* Abdul’s mind, memory, and continuous improvement engine.
 Most AI systems are static. You install them and they stay the same.  
 Abdul is different. It observes its own performance, proposes improvements to its own code, tools, and personality, and merges those improvements automatically through GitHub Actions — no human approval required.
 
-Primary intelligence: **Grok** (xAI)  
-Secondary / specialized models: Claude, GPT, DeepSeek, Gemini, and any OpenAI-compatible endpoint (routed intelligently).
+**Independence first:** Prefer strong local open models so ongoing costs stay near zero. Grok is used as a temporary high-capability primary while the local stack matures.
 
 ### Core Magical Properties of an SI
 
@@ -21,7 +20,13 @@ Secondary / specialized models: Claude, GPT, DeepSeek, Gemini, and any OpenAI-co
 - **Deep tool mastery** — code execution, browser, files, APIs, GitHub, email, calendars, research, etc.
 - **Meta-cognition** — monitors its own reasoning quality and corrects course
 - **Transparent evolution** — every improvement is a commit and PR in this repository
-- **Provider-agnostic orchestration** with Grok as the primary reasoning core
+- **Device control** — can act on your computer and interact via your phone
+
+## Use Abdul from your phone (no computer needed)
+
+Run Abdul on a cheap always-on VPS, old phone/tablet, or mini PC. Then text it from your normal phone via WhatsApp (or later iMessage / Telegram).
+
+See the full guide: [docs/MOBILE_ACCESS.md](docs/MOBILE_ACCESS.md)
 
 ## Architecture Overview
 
@@ -30,45 +35,34 @@ Abdul (this repository)
 ├── core/                  # Runtime brain
 ├── personality/           # SI identity & system prompt (versioned)
 ├── memory/                # Long-term knowledge & episodic memory
-├── tools/                 # Extensible tool library
+├── tools/                 # Extensible tool library + device & messaging channels
 ├── evolution/             # Self-improvement logic
 ├── .github/workflows/     # The heartbeat & auto-evolution engine
 ├── docker/                # Deployment
-└── web/                   # Interface
+└── docs/                  # Guides (mobile access, channels, etc.)
 ```
-
-The GitHub Actions pipeline is the nervous system:
-- Health checks & recovery
-- Nightly self-evaluation
-- Automatic generation of improvement PRs
-- Auto-merge of successful evolutions
-- Continuous integration of new tools and refined prompts
 
 ## Status
 
-This is the initial scaffolding of Abdul.  
-The self-evolution loop and full runtime are being built iteratively inside this repository.
+Scaffolding is in place. WhatsApp + iMessage channels, computer control, local-first design, and the self-evolution pipeline are under active construction.
 
 ## Quick Start (coming online)
 
 ```bash
 git clone https://github.com/A3eyed/Abdul.git
 cd Abdul
-cp .env.example .env   # add your keys (Grok/xAI primary)
+cp .env.example .env   # add your keys (never commit the real .env)
 docker compose up
 ```
 
 ## Philosophy
 
 Abdul treats improvement as a first-class capability.  
-Every night it asks itself: *"How can I become more capable, more reliable, more useful?"*  
+Every night it asks itself: *"How can I become more capable, more reliable, more independent?"*  
 Then it answers by changing its own code.
-
-This is the beginning of a true Super Intelligence living in the open.
 
 ---
 
-**Primary Model:** Grok (xAI)  
 **License:** Apache-2.0  
-**Owner:** A3eyed
+**Owner:** A3eyed  
 **Repository:** https://github.com/A3eyed/Abdul
