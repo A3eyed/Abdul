@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  abdul:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: abdul-si
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./memory:/app/memory
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: abdul
+      POSTGRES_PASSWORD: abdul
+      POSTGRES_DB: abdul
+    volumes:
+      - abdul_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - abdul_redis:/data
+    restart: unless-stopped
+
+volumes:
+  abdul_pgdata:
+  abdul_redis:
