@@ -1,41 +1,51 @@
-# Abdul Desktop
+# Abdul Desktop (Windows + macOS)
 
-Personal SI shell for your **laptop** — interactive assistant, not a frozen Ollama session.
-
-## Goals
-
-- Lightweight desktop app (tray + main window + optional overlay)
-- Local tools: files, shell (permissioned), browser automation hooks, schedules
-- Talks to remote brain (your VPS and/or Grok API) so the laptop stays responsive
-- Learns work patterns into a private profile you control
-
-## Planned stack
-
-- **Tauri 2** + Rust backend commands for system access
-- **Frontend:** HTML/TS or lightweight React/Svelte UI
-- Connects to Abdul core API (`http://127.0.0.1:8080` when core runs locally, or your VPS URL)
-
-## Why not heavy models on the laptop
-
-Large local LLMs freeze or slow some machines. Abdul Desktop is the **control plane**:
+Cross-platform personal assistant shell. **No heavy LLM on the laptop.**
 
 ```
-[Desktop UI + local tools]  ↔  [Brain on VPS / API]
+[Abdul Desktop UI]  -->  [Core API on localhost or VPS]  -->  [Grok API and/or remote open models]
 ```
 
-## Status
+## What you get
 
-Scaffold only. Next: Tauri project init, tray, chat UI, secure config for brain URL + keys.
+- Native-feeling window on **Windows and Mac** (via Tauri)
+- Chat UI in this folder
+- Core stays separate so the laptop does not freeze
 
-## Run core alongside (for now)
+## Quick try (UI in browser while developing)
 
-Until the desktop shell is complete, use the existing FastAPI core:
+Terminal 1 — core:
+```bash
+cd Abdul
+cp .env.example .env
+# set XAI_API_KEY for bootstrap brain (optional if remote open models later)
+python -m core.main
+```
+
+Terminal 2 — desktop UI:
+```bash
+cd desktop
+npm install
+npm run dev
+```
+Open http://localhost:1420
+
+## Native app (Windows + Mac)
+
+Requires [Rust](https://rustup.rs/) + [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
-# from repo root
-cp .env.example .env
-python -m core.main
-# open http://localhost:8080
+cd desktop
+npm install
+# After full Tauri Rust project is completed:
+# npm run tauri dev
+# npm run tauri build   # .msi/.exe on Windows, .app/.dmg on Mac
 ```
 
-Desktop will embed or attach to that API.
+`src-tauri/tauri.conf.json` targets both OS families.
+
+## Next
+
+- Complete Tauri Rust side (tray, permissions)
+- Settings for brain URL
+- Local tools from the desktop process
