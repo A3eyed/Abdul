@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,29 +45,19 @@ def propose_health_clarity() -> list[str]:
     if not health.exists():
         return []
     text = health.read_text(encoding="utf-8")
-    if "independent" in text.lower():
+    if "independent" in text.lower() or "mode_hint" in text:
         return []
-    # Minimal additive change — human will review
     new = text.replace(
         '"version": "0.1.0-si",
-',"n",
+',
         '"version": "0.2.0-si",
         "mode_hint": "independent offline brain available",
 ',
     )
     if new == text:
-        # fallback append style if structure differs
-        if "return {" in text and "mode_hint" not in text:
-            new = text.replace(
-                "return {",
-                'return {
-        "mode_hint": "independent offline brain available",',
-                1,
-            )
-    if new != text:
-        health.write_text(new, encoding="utf-8")
-        return [str(health.relative_to(ROOT))]
-    return []
+        return []
+    health.write_text(new, encoding="utf-8")
+    return [str(health.relative_to(ROOT))]
 
 
 def propose_evolution_readme() -> list[str]:
@@ -108,19 +97,15 @@ GitHub → Actions → **Abdul Self-Evolution** → **Run workflow**
 
 
 def propose_env_independence_note() -> list[str]:
-    """Keep .env.example aligned with independent defaults if drifted."""
     path = ROOT / ".env.example"
     if not path.exists():
         return []
     text = path.read_text(encoding="utf-8")
-    changed = False
-    if "INDEPENDENT=" not in text:
-        text = "# Independent by default\nINDEPENDENT=true\nALLOW_OLLAMA=false\n\n" + text
-        changed = True
-    if changed:
-        path.write_text(text, encoding="utf-8")
-        return [".env.example"]
-    return []
+    if "INDEPENDENT=" in text:
+        return []
+    text = "# Independent by default\nINDEPENDENT=true\nALLOW_OLLAMA=false\n\n" + text
+    path.write_text(text, encoding="utf-8")
+    return [".env.example"]
 
 
 def main() -> None:
@@ -135,8 +120,12 @@ def main() -> None:
     changed += propose_health_clarity()
     changed += propose_env_independence_note()
 
-    # Proposal summary for the PR / log
     proposal = ROOT / "evolution" / "PROPOSAL.md"
+    files_section = (
+        "\n".join(f"- `{f}`" for f in changed)
+        if changed
+        else "- (no file changes this cycle — log only)"
+    )
     proposal.write_text(
         f"""# Evolution proposal
 
@@ -149,8 +138,12 @@ def main() -> None:
 """
         + "\n".join(f"- {g}" for g in EVOLUTION_GOALS)
         + "\n\n## Files touched\n\n"
-        + ("\n".join(f"- `{f}`" for f in changed) if changed else "- (no file changes this cycle — log only)\n")
-        + "\n\n## Reviewer checklist\n\n- [ ] Diff looks intentional\n- [ ] No secrets committed\n- [ ] Independent mode still default\n- [ ] Approve and merge, or close\n",
+        + files_section
+        + "\n\n## Reviewer checklist\n\n"
+        + "- [ ] Diff looks intentional\n"
+        + "- [ ] No secrets committed\n"
+        + "- [ ] Independent mode still default\n"
+        + "- [ ] Approve and merge, or close\n",
         encoding="utf-8",
     )
     if "evolution/PROPOSAL.md" not in changed:
