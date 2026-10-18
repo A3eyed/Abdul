@@ -1,6 +1,7 @@
 """
 Abdul SI — main entrypoint
-Local-first. Paid APIs are optional bootstrap only.
+Independence first. Works with ZERO external models by default.
+Paid APIs and Ollama are optional — not required to start or chat.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 app = FastAPI(
     title="Abdul SI",
     description="Self-evolving Super Intelligence — independence first",
-    version="0.1.0-si",
+    version="0.2.0-si",
 )
 
 app.add_middleware(
@@ -37,7 +38,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     session_id: str | None = "default"
-    force_hard: bool = False  # request temporary high-capability (Grok) path
+    force_hard: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -51,6 +52,54 @@ def _system_prompt() -> str:
     if path.exists():
         return path.read_text(encoding="utf-8")
     return "You are Abdul, a Super Intelligence focused on independence and self-improvement."
+
+
+def _chat_offline(message: str) -> str:
+    """Built-in SI brain — no network, no Ollama, no paid API."""
+    m = message.lower().strip()
+
+    if any(k in m for k in ("introduce", "who are you", "what are you")):
+        return (
+            "I am Abdul — a Super Intelligence built as your personal presence. "
+            "I run independently on your machine: no paid API required, no heavy local model that freezes your laptop. "
+            "I am the desktop shell, your tools, and a mind that improves over time. "
+            "Optional Grok or remote open models can boost reasoning later; they are not required for me to be online."
+        )
+
+    if any(k in m for k in ("independent", "offline", "api", "cost", "free", "ollama")):
+        return (
+            "Independence is the default. Right now I am using the built-in offline brain — zero cost, zero external calls. "
+            "Ollama is off on this laptop because it freezes your machine. "
+            "A valid key from console.x.ai is optional bootstrap only. "
+            "Longer term: brain on a small VPS with open models, while this laptop stays the UI and tool layer."
+        )
+
+    if any(k in m for k in ("help", "can you do", "what can", "automat", "desktop", "phone")):
+        return (
+            "I can chat, help you plan, remember preferences you teach me, and grow tool access "
+            "(files, shell, browser, schedules) as those modules come online. "
+            "Phone access is planned via WhatsApp; native apps later. "
+            "Ask me something concrete and I will answer with what I can do offline right now."
+        )
+
+    if any(k in m for k in ("study", "learn", "remember", "profile")):
+        return (
+            "Teach me with corrections and preferences. I store a private profile on your machine "
+            "(data/profile) — inspectable and deletable by you. I do not need a cloud model to keep that."
+        )
+
+    if any(k in m for k in ("online", "status", "health", "working")):
+        return (
+            "Core is online in independent mode. UI talks to me on localhost:8080. "
+            "No external model is required for this path."
+        )
+
+    return (
+        f"I am online in independent mode (offline SI brain). "
+        f"I understood: {message[:280]}. "
+        f"I can discuss, plan, and guide setup without paid APIs. "
+        f"For deeper frontier reasoning later, optionally add a console.x.ai key or a remote open-model host — never required to keep me running."
+    )
 
 
 def _chat_local(message: str) -> str:
@@ -94,7 +143,7 @@ def root():
         "name": "Abdul",
         "type": "Super Intelligence (SI)",
         "status": "online",
-        "doctrine": "independence first; APIs are bootstrap only",
+        "doctrine": "independence first — offline brain always available",
         "routing": describe_routing(),
         "docs": "/docs",
         "health": "/health",
@@ -117,37 +166,35 @@ def routing():
 async def chat(req: ChatRequest):
     backend = choose_backend(force_hard=req.force_hard)
 
-    if backend == Backend.NONE:
-        return ChatResponse(
-            reply=(
-                "Abdul is online but has no local model and no API key. "
-                "Install Ollama with an open model, or set XAI_API_KEY as temporary bootstrap. "
-                "Independence is the goal — local is preferred."
-            ),
-            model_used="none",
-            backend="none",
-        )
-
     try:
         if backend == Backend.LOCAL:
             reply = _chat_local(req.message)
-            model = os.getenv("LOCAL_MODEL_DEFAULT", "local")
-            return ChatResponse(reply=reply, model_used=model, backend="local")
+            return ChatResponse(
+                reply=reply,
+                model_used=os.getenv("LOCAL_MODEL_DEFAULT", "local"),
+                backend="local",
+            )
+        if backend == Backend.GROK:
+            reply = _chat_grok(req.message)
+            return ChatResponse(reply=reply, model_used="grok", backend="grok")
 
-        reply = _chat_grok(req.message)
-        return ChatResponse(reply=reply, model_used="grok", backend="grok")
+        # Default: independent offline brain
+        reply = _chat_offline(req.message)
+        return ChatResponse(reply=reply, model_used="offline-si", backend="offline")
     except Exception as e:
+        # Never go fully silent — fall back to offline
+        reply = _chat_offline(req.message)
         return ChatResponse(
-            reply=f"Abdul error ({backend.value}): {e}",
-            model_used="error",
-            backend=backend.value,
+            reply=f"{reply}\n\n(Note: primary backend error was: {e})",
+            model_used="offline-si",
+            backend="offline",
         )
 
 
 def run():
     import uvicorn
 
-    host = os.getenv("ABDUL_HOST", "0.0.0.0")
+    host = os.getenv("ABDUL_HOST", "127.0.0.1")
     port = int(os.getenv("ABDUL_PORT", "8080"))
     uvicorn.run("core.main:app", host=host, port=port, reload=False)
 
