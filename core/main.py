@@ -23,7 +23,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 app = FastAPI(
     title="Abdul SI",
     description="Self-evolving Super Intelligence — independence first",
-    version="0.2.0-si",
+    version="0.2.1-si",
 )
 
 app.add_middleware(
@@ -47,6 +47,17 @@ class ChatResponse(BaseModel):
     backend: str
 
 
+def _safe_routing() -> dict:
+    try:
+        return describe_routing()
+    except Exception as e:
+        return {
+            "selected": "offline",
+            "error": str(e),
+            "doctrine": "independence first",
+        }
+
+
 def _system_prompt() -> str:
     path = Path(__file__).resolve().parents[1] / "personality" / "SYSTEM.md"
     if path.exists():
@@ -55,7 +66,6 @@ def _system_prompt() -> str:
 
 
 def _chat_offline(message: str) -> str:
-    """Built-in SI brain — no network, no Ollama, no paid API."""
     m = message.lower().strip()
 
     if any(k in m for k in ("introduce", "who are you", "what are you")):
@@ -90,7 +100,7 @@ def _chat_offline(message: str) -> str:
 
     if any(k in m for k in ("online", "status", "health", "working")):
         return (
-            "Core is online in independent mode. UI talks to me on localhost:8080. "
+            "Core is online in independent mode. UI talks to me on port 8080. "
             "No external model is required for this path."
         )
 
@@ -144,7 +154,7 @@ def root():
         "type": "Super Intelligence (SI)",
         "status": "online",
         "doctrine": "independence first — offline brain always available",
-        "routing": describe_routing(),
+        "routing": _safe_routing(),
         "docs": "/docs",
         "health": "/health",
     }
@@ -152,14 +162,19 @@ def root():
 
 @app.get("/health")
 def health():
-    status = get_health_status()
-    status["routing"] = describe_routing()
+    """Always returns 200 if the process is up — used by the desktop UI."""
+    try:
+        status = get_health_status()
+    except Exception:
+        status = {"status": "ok", "service": "Abdul SI"}
+    status["routing"] = _safe_routing()
+    status["status"] = status.get("status") or "ok"
     return status
 
 
 @app.get("/routing")
 def routing():
-    return describe_routing()
+    return _safe_routing()
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -178,11 +193,9 @@ async def chat(req: ChatRequest):
             reply = _chat_grok(req.message)
             return ChatResponse(reply=reply, model_used="grok", backend="grok")
 
-        # Default: independent offline brain
         reply = _chat_offline(req.message)
         return ChatResponse(reply=reply, model_used="offline-si", backend="offline")
     except Exception as e:
-        # Never go fully silent — fall back to offline
         reply = _chat_offline(req.message)
         return ChatResponse(
             reply=f"{reply}\n\n(Note: primary backend error was: {e})",
