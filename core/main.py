@@ -1,7 +1,7 @@
 """
 Abdul SI — main entrypoint
-Independence first. Works with ZERO external models by default.
-Paid APIs and Ollama are optional — not required to start or chat.
+Mobile-ready personal SI + workflow automation backend.
+Independence first: chat works offline; automations use dry-run until API keys set.
 """
 
 from __future__ import annotations
@@ -17,13 +17,14 @@ from pydantic import BaseModel
 
 from core.health import get_health_status
 from core.router import Backend, choose_backend, describe_routing
+from core.workflows.api import router as workflows_router
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 app = FastAPI(
     title="Abdul SI",
-    description="Self-evolving Super Intelligence — independence first",
-    version="0.2.1-si",
+    description="Personal Super Intelligence + automation platform",
+    version="0.3.0-si",
 )
 
 app.add_middleware(
@@ -33,6 +34,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(workflows_router)
 
 
 class ChatRequest(BaseModel):
@@ -62,7 +65,7 @@ def _system_prompt() -> str:
     path = Path(__file__).resolve().parents[1] / "personality" / "SYSTEM.md"
     if path.exists():
         return path.read_text(encoding="utf-8")
-    return "You are Abdul, a Super Intelligence focused on independence and self-improvement."
+    return "You are Abdul, a Super Intelligence and automation assistant."
 
 
 def _chat_offline(message: str) -> str:
@@ -70,45 +73,40 @@ def _chat_offline(message: str) -> str:
 
     if any(k in m for k in ("introduce", "who are you", "what are you")):
         return (
-            "I am Abdul — a Super Intelligence built as your personal presence. "
-            "I run independently on your machine: no paid API required, no heavy local model that freezes your laptop. "
-            "I am the desktop shell, your tools, and a mind that improves over time. "
-            "Optional Grok or remote open models can boost reasoning later; they are not required for me to be online."
+            "I am Abdul — your personal Super Intelligence assistant. "
+            "I chat, plan, and run workflows for customer service, marketing, and social publishing. "
+            "Use the mobile app or API: /workflows/customer-service, /workflows/social, /workflows/marketing-calendar. "
+            "Publishing stays in dry-run until you add platform API keys and turn dry-run off."
+        )
+
+    if any(k in m for k in ("workflow", "automat", "social", "marketing", "customer")):
+        return (
+            "Automation is live on this core:\n"
+            "• POST /workflows/customer-service — draft CS replies (approve then send)\n"
+            "• POST /workflows/social — draft + optional publish (X/Meta/LinkedIn)\n"
+            "• POST /workflows/marketing-calendar — multi-day content plan\n"
+            "• POST /workflows/{id}/approve — approve from your phone\n"
+            "• GET /workflows — list jobs\n"
+            "Default is safe dry-run for outbound actions."
         )
 
     if any(k in m for k in ("independent", "offline", "api", "cost", "free", "ollama")):
         return (
-            "Independence is the default. Right now I am using the built-in offline brain — zero cost, zero external calls. "
-            "Ollama is off on this laptop because it freezes your machine. "
-            "A valid key from console.x.ai is optional bootstrap only. "
-            "Longer term: brain on a small VPS with open models, while this laptop stays the UI and tool layer."
+            "Chat works independently with the offline brain. "
+            "Real social/email send needs platform tokens — that is unavoidable for true publishing. "
+            "Until then, workflows stage content for your approval."
         )
 
-    if any(k in m for k in ("help", "can you do", "what can", "automat", "desktop", "phone")):
+    if any(k in m for k in ("help", "can you do", "what can")):
         return (
-            "I can chat, help you plan, remember preferences you teach me, and grow tool access "
-            "(files, shell, browser, schedules) as those modules come online. "
-            "Phone access is planned via WhatsApp; native apps later. "
-            "Ask me something concrete and I will answer with what I can do offline right now."
-        )
-
-    if any(k in m for k in ("study", "learn", "remember", "profile")):
-        return (
-            "Teach me with corrections and preferences. I store a private profile on your machine "
-            "(data/profile) — inspectable and deletable by you. I do not need a cloud model to keep that."
-        )
-
-    if any(k in m for k in ("online", "status", "health", "working")):
-        return (
-            "Core is online in independent mode. UI talks to me on port 8080. "
-            "No external model is required for this path."
+            "I can: converse as your SI, draft CS replies, build marketing calendars, "
+            "stage social posts, run webhook automations, and queue jobs you approve from mobile. "
+            "See /docs for full API."
         )
 
     return (
-        f"I am online in independent mode (offline SI brain). "
-        f"I understood: {message[:280]}. "
-        f"I can discuss, plan, and guide setup without paid APIs. "
-        f"For deeper frontier reasoning later, optionally add a console.x.ai key or a remote open-model host — never required to keep me running."
+        f"Online (independent mode). You said: {message[:280]}. "
+        f"Ask about workflows, social, marketing, or customer service — or open /docs."
     )
 
 
@@ -153,22 +151,23 @@ def root():
         "name": "Abdul",
         "type": "Super Intelligence (SI)",
         "status": "online",
-        "doctrine": "independence first — offline brain always available",
-        "routing": _safe_routing(),
+        "product": "mobile personal SI + automation",
+        "workflows": "/workflows",
         "docs": "/docs",
         "health": "/health",
+        "routing": _safe_routing(),
     }
 
 
 @app.get("/health")
 def health():
-    """Always returns 200 if the process is up — used by the desktop UI."""
     try:
         status = get_health_status()
     except Exception:
         status = {"status": "ok", "service": "Abdul SI"}
     status["routing"] = _safe_routing()
     status["status"] = status.get("status") or "ok"
+    status["workflows"] = True
     return status
 
 
@@ -180,7 +179,6 @@ def routing():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     backend = choose_backend(force_hard=req.force_hard)
-
     try:
         if backend == Backend.LOCAL:
             reply = _chat_local(req.message)
@@ -192,7 +190,6 @@ async def chat(req: ChatRequest):
         if backend == Backend.GROK:
             reply = _chat_grok(req.message)
             return ChatResponse(reply=reply, model_used="grok", backend="grok")
-
         reply = _chat_offline(req.message)
         return ChatResponse(reply=reply, model_used="offline-si", backend="offline")
     except Exception as e:
@@ -207,7 +204,7 @@ async def chat(req: ChatRequest):
 def run():
     import uvicorn
 
-    host = os.getenv("ABDUL_HOST", "127.0.0.1")
+    host = os.getenv("ABDUL_HOST", "0.0.0.0")
     port = int(os.getenv("ABDUL_PORT", "8080"))
     uvicorn.run("core.main:app", host=host, port=port, reload=False)
 
