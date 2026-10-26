@@ -47,13 +47,15 @@ def propose_health_clarity() -> list[str]:
     text = health.read_text(encoding="utf-8")
     if "independent" in text.lower() or "mode_hint" in text:
         return []
-    new = text.replace(
-        '"version": "0.1.0-si",
-',
-        '"version": "0.2.0-si",
-        "mode_hint": "independent offline brain available",
-',
+
+    old = '"version": "0.1.0-si",'
+    new_snip = (
+        '"version": "0.2.0-si",\n'
+        '        "mode_hint": "independent offline brain available",'
     )
+    if old not in text:
+        return []
+    new = text.replace(old, new_snip, 1)
     if new == text:
         return []
     health.write_text(new, encoding="utf-8")
