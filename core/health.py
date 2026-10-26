@@ -10,5 +10,6 @@ def get_health_status() -> dict:
         "status": "ok",
         "service": "Abdul SI",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "0.1.0-si",
+        "version": "0.2.0-si",
+        "mode_hint": "independent offline brain available",
     }
