@@ -1,6 +1,6 @@
 # Evolution proposal
 
-**Generated:** 2026-10-26T17:31:18.492572+00:00
+**Generated:** 2026-10-27T08:37:23.836154+00:00
 
 **Requires human approval before merge.**
 
@@ -15,7 +15,6 @@
 ## Files touched
 
 - `evolution/README.md`
-- `core/health.py`
 
 ## Reviewer checklist
 
