@@ -1,6 +1,6 @@
 # Evolution proposal
 
-**Generated:** 2026-10-27T08:37:23.836154+00:00
+**Generated:** 2026-10-28T09:16:38.730732+00:00
 
 **Requires human approval before merge.**
 
@@ -14,7 +14,7 @@
 
 ## Files touched
 
-- `evolution/README.md`
+- (no file changes this cycle — log only)
 
 ## Reviewer checklist
 
