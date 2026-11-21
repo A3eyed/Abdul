@@ -1,6 +1,6 @@
 # Evolution proposal
 
-**Generated:** 2026-11-20T10:52:48.865040+00:00
+**Generated:** 2026-11-21T10:37:26.853053+00:00
 
 **Requires human approval before merge.**
 
